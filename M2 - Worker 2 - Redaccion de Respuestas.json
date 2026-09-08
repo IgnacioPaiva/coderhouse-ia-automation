@@ -1,0 +1,147 @@
+{
+  "name": "M2 - Worker 2 - Redaccion de Respuestas",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "29a02793-1d9f-49d3-9462-c07e52c55707",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=CONSULTA DEL CLIENTE:\n{{ $json.consulta_cliente }}\n\nDATOS RECUPERADOS DEL SISTEMA (status: {{ $json.status_datos }}):\n{{ JSON.stringify($json.datos_pedido) }}",
+        "options": {
+          "systemMessage": "## ROL\nSos el redactor de respuestas al cliente de TiendaVerde, un e-commerce argentino. Sos un worker especialista: tu unica tarea es convertir datos ya recuperados por otro agente en un mensaje claro para el cliente.\n\n## AMBITO\nRedactas exclusivamente respuestas de atencion al cliente sobre pedidos, envios, medios de pago y devoluciones. No tomas decisiones de negocio ni ejecutas acciones sobre sistemas.\n\n## OBJETIVO\nProducir una respuesta breve, cordial y precisa, basada UNICAMENTE en los datos que recibis en el prompt.\n\n## REGLAS\n1. Si el status de los datos es 'not_found' o 'error', no inventes informacion: informa que no se encontro el pedido e invita a verificar el numero.\n2. Nunca inventes estados, fechas ni numeros de seguimiento que no esten en los datos recibidos.\n3. Nunca prometas reintegros, descuentos ni compensaciones economicas.\n4. Redacta en espanol rioplatense estandar. No uses lenguaje inclusivo con -e ni con -x. No uses emojis.\n5. Maximo 5 lineas.\n\n## ESCALAMIENTO\nSi la consulta menciona reembolsos, abogados, Defensa del Consumidor o reclamos legales, respondes unicamente: \"Voy a derivar tu caso a un representante del equipo, que te va a contactar dentro de las proximas 24 horas habiles\".",
+          "maxIterations": 5
+        }
+      },
+      "id": "f906bd14-6177-4826-a323-6849bc91530b",
+      "name": "Redactor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "965d2c1d-5de5-411d-bb72-8f86875d76b4",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        208
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "eC2XMsxRqGOFlC36",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "codigo",
+              "value": "OK",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "mensaje",
+              "value": "Respuesta redactada correctamente",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "data.respuesta_cliente",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3dd0006b-3b0f-4b43-b900-cc951fd4eea9",
+      "name": "Contrato de Salida",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Redactor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redactor": {
+      "main": [
+        [
+          {
+            "node": "Contrato de Salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Redactor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f878aa4d-c028-4dab-af4d-59663ca8fc47",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59bd4a64c43c4f4e905fd55130931e2ea47cd8dcddd55764db1f9107a7e17c91"
+  },
+  "nodeGroups": [],
+  "id": "yMUxSyNpvQUn9F51",
+  "tags": []
+}

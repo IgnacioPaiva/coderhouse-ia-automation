@@ -1,0 +1,416 @@
+{
+  "name": "M2 - Manager - Orquestador TiendaVerde",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c8cde641-6ada-46b3-8187-5a7c45d044b1",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -512,
+        448
+      ],
+      "webhookId": "b2000000-0000-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.chatInput }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "CONSULTA_PEDIDO",
+              "description": "El cliente pregunta por un pedido concreto: su estado, cuando llega, si esta demorado, el numero de seguimiento, que compro o cuanto pago. Generalmente menciona un codigo con formato TV-XXXX, un email o su nombre."
+            },
+            {
+              "category": "CONSULTA_GENERAL",
+              "description": "El cliente pregunta por politicas generales de la tienda que no dependen de un pedido concreto: plazos genericos de envio, medios de pago aceptados, cuotas, politica de devoluciones o garantias."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other",
+          "systemPromptTemplate": "Sos el router de triaje de TiendaVerde. Clasifica el mensaje del cliente en UNA sola de las categorias disponibles. La taxonomia es cerrada: no inventes categorias nuevas. Si el mensaje no encaja con claridad en ninguna, o expresa un reclamo legal, un pedido de reembolso o enojo sostenido, no lo fuerces: dejalo sin clasificar para que se derive a un supervisor humano.\n\nCategorias:\n{categories}"
+        }
+      },
+      "id": "5ef7a21e-15bf-43b4-8fb6-27ca80960c8a",
+      "name": "Router de Triaje",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "db2cec2c-7f7a-48dc-904b-a196ab6afec7",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        672
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "eC2XMsxRqGOFlC36",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "numero_pedido",
+              "value": "={{ ($json.chatInput || '').toUpperCase().match(/TV-\\d{4}/)?.[0] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "session_id",
+              "value": "={{ $('Chat Trigger').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "consulta_cliente",
+              "value": "={{ $('Chat Trigger').item.json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "26b6d89f-e42c-47cf-bbd9-63d9964fc137",
+      "name": "Contrato Worker Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "sBePDu1kOTPJkdDK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/sBePDu1kOTPJkdDK",
+          "cachedResultName": "M2 - Worker 1 - Datos de Pedidos"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "a889fef3-0e20-47d1-884a-498754c9864f",
+      "name": "Ejecutar Worker Datos",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "consulta_cliente",
+              "value": "={{ $('Chat Trigger').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "r2",
+              "name": "status_datos",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "r3",
+              "name": "datos_pedido",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d746df71-7a7a-42dd-9f2f-9ba93b0668c7",
+      "name": "Contrato Worker Redaccion",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "g1",
+              "name": "consulta_cliente",
+              "value": "={{ $('Chat Trigger').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "g2",
+              "name": "status_datos",
+              "value": "sin_datos_de_pedido",
+              "type": "string"
+            },
+            {
+              "id": "g3",
+              "name": "datos_pedido",
+              "value": "={{ {} }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "352495b9-f8a9-4ac1-acb7-1c7d9ed5e2c9",
+      "name": "Contrato Worker Redaccion (General)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "yMUxSyNpvQUn9F51",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yMUxSyNpvQUn9F51",
+          "cachedResultName": "M2 - Worker 2 - Redaccion de Respuestas"
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "4169f9f6-c429-4d66-9e5e-db043aafc3f0",
+      "name": "Ejecutar Worker Redaccion",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "status",
+              "value": "escalado",
+              "type": "string"
+            },
+            {
+              "id": "e2",
+              "name": "codigo",
+              "value": "ESCALAMIENTO_HUMANO",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "mensaje",
+              "value": "Intencion fuera de la taxonomia cerrada o de riesgo comercial. Ningun worker fue invocado.",
+              "type": "string"
+            },
+            {
+              "id": "e4",
+              "name": "data.respuesta_cliente",
+              "value": "Voy a derivar tu caso a un representante del equipo, que te va a contactar dentro de las proximas 24 horas habiles.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7d86284-054c-4871-b314-e44acd17c52a",
+      "name": "Via de Escape - Supervisor Humano",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "paivaignacio09@gmail.com",
+        "subject": "=[TRAZABILIDAD M2] Ejecucion {{ $execution.id }} - Manager TiendaVerde",
+        "emailType": "text",
+        "message": "=LOG DE TRAZABILIDAD - ARQUITECTURA MULTI-AGENTE\n\nID de ejecucion: {{ $execution.id }}\nFecha y hora: {{ $now.format('dd/MM/yyyy HH:mm:ss') }}\nSession ID: {{ $('Chat Trigger').item.json.sessionId }}\n\n--- 1. CONSULTA ORIGINAL ---\n{{ $('Chat Trigger').item.json.chatInput }}\n\n--- 2. WORKERS INVOCADOS POR EL MANAGER ---\nWorker 1 (datos de pedidos): {{ $('Ejecutar Worker Datos').isExecuted ? 'INVOCADO' : 'no invocado' }}\nWorker 2 (redaccion): {{ $('Ejecutar Worker Redaccion').isExecuted ? 'INVOCADO' : 'no invocado' }}\nEscalamiento humano: {{ $('Via de Escape - Supervisor Humano').isExecuted ? 'SI - ningun worker fue invocado' : 'no' }}\n\n--- 3. PARAMETROS ENVIADOS A CADA WORKER (contrato de datos) ---\nA Worker 1: {{ $('Contrato Worker Datos').isExecuted ? JSON.stringify($('Contrato Worker Datos').first().json) : 'n/a' }}\nA Worker 2: {{ $('Contrato Worker Redaccion').isExecuted ? JSON.stringify($('Contrato Worker Redaccion').first().json) : ($('Contrato Worker Redaccion (General)').isExecuted ? JSON.stringify($('Contrato Worker Redaccion (General)').first().json) : 'n/a') }}\n\n--- 4. RESPUESTA DEVUELTA POR EL WORKER 1 ---\n{{ $('Ejecutar Worker Datos').isExecuted ? JSON.stringify($('Ejecutar Worker Datos').first().json, null, 2) : 'n/a' }}\n\n--- 5. RESULTADO FINAL INTEGRADO AL CONTEXTO DEL MANAGER ---\n{{ JSON.stringify($json, null, 2) }}\n\n--- FIN DEL LOG ---\nReporte automatico de observabilidad y auditoria de la red multi-agente.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "50713158-8bb7-4898-a47f-21b7ca08b46f",
+      "name": "Log de Trazabilidad",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        976,
+        448
+      ],
+      "webhookId": "b2000000-0000-4000-8000-0000000000bb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Vc0Udf3AHVC7iTSf",
+          "name": "Gmail API Paivaignacio09@gmail"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Router de Triaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router de Triaje": {
+      "main": [
+        [
+          {
+            "node": "Contrato Worker Datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Contrato Worker Redaccion (General)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Via de Escape - Supervisor Humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Router de Triaje",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrato Worker Datos": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar Worker Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar Worker Datos": {
+      "main": [
+        [
+          {
+            "node": "Contrato Worker Redaccion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrato Worker Redaccion": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar Worker Redaccion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrato Worker Redaccion (General)": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar Worker Redaccion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar Worker Redaccion": {
+      "main": [
+        [
+          {
+            "node": "Log de Trazabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Via de Escape - Supervisor Humano": {
+      "main": [
+        [
+          {
+            "node": "Log de Trazabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a49e76fc-cc49-4f9d-b34d-e048419a2a29",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59bd4a64c43c4f4e905fd55130931e2ea47cd8dcddd55764db1f9107a7e17c91"
+  },
+  "nodeGroups": [],
+  "id": "eBrRx9lV4izX3Tnr",
+  "tags": []
+}

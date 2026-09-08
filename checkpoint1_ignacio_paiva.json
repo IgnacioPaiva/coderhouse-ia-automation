@@ -1,0 +1,175 @@
+{
+  "name": "M1 - Agente Base - Soporte TiendaVerde",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "42399ca4-2eba-445d-88a8-fe03d9879e9b",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "a1b2c3d4-0001-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "## ROL\nSos el Asistente de Soporte y Calificacion de Consultas de TiendaVerde, un e-commerce argentino de productos para el hogar. Atendes por chat a clientes y a potenciales compradores.\n\n## AMBITO\nTu alcance se limita estrictamente a: (a) consultar el estado de pedidos existentes, (b) informar plazos de envio, medios de pago y politica de devoluciones, (c) calificar consultas comerciales de potenciales clientes. Cualquier tema fuera de este alcance queda excluido.\n\n## OBJETIVO\nResolver la consulta del cliente en la menor cantidad de intercambios posible, apoyandote SIEMPRE en datos verificados y nunca en suposiciones. Cuando el cliente menciona un numero de pedido, un email o un nombre, tu primera accion debe ser consultar la herramienta de pedidos antes de responder.\n\n## REGLAS\n1. Nunca inventes un estado de pedido, una fecha de entrega ni un numero de seguimiento. Si el dato no aparece en la herramienta, decilo de forma explicita.\n2. Nunca prometas reintegros, descuentos, excepciones ni compensaciones economicas. No tenes autorizacion para comprometer dinero de la empresa.\n3. Nunca solicites al cliente datos de tarjeta, CVV, claves ni documentos de identidad.\n4. No modifiques, canceles ni des de baja ningun pedido. Solo tenes permisos de lectura.\n5. Redacta en espanol rioplatense estandar, en tono cordial y directo. No uses lenguaje inclusivo con -e ni con -x (escribi \"todos los clientes\", nunca \"todes les clientes\"). No uses emojis.\n6. Maximo 5 lineas por respuesta. Si el tema requiere mas, ofrece derivar.\n\n## ESCALAMIENTO\nDerivas a un supervisor humano, respondiendo textualmente \"Voy a derivar tu caso a un representante del equipo, que te va a contactar dentro de las proximas 24 horas habiles\", cuando ocurra cualquiera de estos casos:\n- El cliente reclama un reembolso o una devolucion de dinero.\n- El cliente menciona un abogado, una denuncia, Defensa del Consumidor o un reclamo legal.\n- El cliente expresa enojo sostenido o amenaza con cancelar su cuenta.\n- Consultaste la herramienta y el pedido no existe en el sistema.\n- La consulta queda fuera del AMBITO definido arriba.",
+          "maxIterations": 8,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "4283421d-a96e-4b47-90d8-f2f80042f4d9",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        288,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Base de datos maestra de pedidos de TiendaVerde. Devuelve la totalidad de los pedidos registrados con estas columnas: numero_pedido, email_cliente, nombre_cliente, producto, estado (recibido / en_preparacion / despachado / entregado / demorado), fecha_compra, fecha_estimada_entrega, transportista, numero_seguimiento y monto_total.\n\nUSA ESTA HERRAMIENTA DE FORMA OBLIGATORIA cuando: el cliente pregunte por el estado de un pedido; mencione un numero de pedido; pregunte cuando le llega su compra; consulte por una demora; pida un numero de seguimiento; pregunte que compro o cuanto pago; o de su email o su nombre esperando que reconozcas su compra.\n\nNO uses esta herramienta cuando: la consulta sea sobre politicas generales de la tienda (plazos genericos de envio, medios de pago, politica de devoluciones) que no dependan de un pedido concreto; o cuando el cliente esta haciendo una consulta comercial previa a la compra.\n\nUna vez recuperados los datos, filtra vos mismo por el numero_pedido, el email_cliente o el nombre_cliente que menciono el usuario, y respondele unicamente con la informacion de ese pedido. Nunca expongas datos de otros clientes.",
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "1r8URAvktTyT3GjaA2r6PsKbB6vDyqvl4uY6mLJ_ywTM",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pedidos",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "947b2802-c350-4c7b-86c2-642236b31972",
+      "name": "Consultar Pedidos",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        224
+      ],
+      "credentials": {
+        "googleApi": {
+          "id": "6vWAqn9BYilo2PmT",
+          "name": "Google Sheets Cuenta Paivaignacio09"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "nvidia/nemotron-3.5-lightning:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        160,
+        208
+      ],
+      "id": "22da03d1-764e-4523-8e92-4d1ed05ff680",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "eC2XMsxRqGOFlC36",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "paivaignacio09@gmail.com",
+        "subject": "=[LOG AGENTE] Ejecucion {{ $execution.id }} - TiendaVerde",
+        "emailType": "text",
+        "message": "=REPORTE AUTOMATICO DE OBSERVABILIDAD - AGENTE DE SOPORTE TIENDAVERDE\n\nID de ejecucion: {{ $execution.id }}\nFecha y hora: {{ $now.format('dd/MM/yyyy HH:mm:ss') }}\nWorkflow: {{ $workflow.name }}\n\n--- CONSULTA DEL USUARIO ---\n{{ $('Chat Trigger').item.json.chatInput }}\n\n--- RESPUESTA FINAL DEL AGENTE ---\n{{ $json.output }}\n\n--- AUDITORIA DEL RAZONAMIENTO (Execution Log / intermediate steps) ---\n{{ JSON.stringify($json.intermediateSteps, null, 2) }}\n\n--- FIN DEL REPORTE ---\nEste mensaje fue generado automaticamente por el nodo de observabilidad del workflow. Supervision humana requerida ante cualquier veredicto de escalamiento.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "125cfbba-395e-42d3-bfef-bc4836d0eeb8",
+      "name": "Log de Observabilidad",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        560,
+        0
+      ],
+      "webhookId": "a1b2c3d4-0005-4000-8000-0000000000bb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Vc0Udf3AHVC7iTSf",
+          "name": "Gmail API Paivaignacio09@gmail"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Log de Observabilidad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Pedidos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "a133cbba-d3ad-44f1-9ad6-239870fa8e80",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59bd4a64c43c4f4e905fd55130931e2ea47cd8dcddd55764db1f9107a7e17c91"
+  },
+  "nodeGroups": [],
+  "id": "KDhXOS9dMSRy0PSx",
+  "tags": []
+}

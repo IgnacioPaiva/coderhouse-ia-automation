@@ -17,7 +17,7 @@ especialistas vía sub-workflows → log de trazabilidad.
 | **M1** | Agente base en modo Tools Agent: system prompt modular, guardrail de 8 iteraciones, una tool nativa y log de observabilidad | [`M1/checkpoint1_ignacio_paiva.json`](M1/) |
 | **M2** | Orquestación multi-agente Manager-Worker con sub-workflows, contratos de datos JSON y vía de escape a supervisor humano | [`M2/`](M2/) — manager + 2 workers |
 | M3 | Memoria persistente por Session_ID | _pendiente_ |
-| M4 | Integraciones reales vía OAuth2 (CRM, Gmail, Slack) | _pendiente_ |
+| M4 | IIntegraciones reales con CRM, Gmail y Slack: filtro anti auto-reply, look up previo al alta para evitar duplicados, borrador con aprobación humana y limpieza de payload | [`M4/`](M4/) |
 | M5 | Base de conocimiento documental (RAG) | _pendiente_ |
 | M6 | Capa de voz (STT / TTS) | _pendiente_ |
 | M8 | Supervisor AI-as-a-Judge y dashboard de calidad | _pendiente_ |

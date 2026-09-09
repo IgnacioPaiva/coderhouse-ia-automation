@@ -1,0 +1,430 @@
+{
+  "name": "M3 - Manager con Memoria Persistente - TiendaVerde",
+  "nodes": [
+    {
+      "parameters": { "public": false, "options": {} },
+      "id": "b3000000-0000-4000-8000-000000000001",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [-1360, 0],
+      "webhookId": "b3000000-0000-4000-8000-0000000000aa"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": { "__rl": true, "value": "appF7j7oBbwryhFIM", "mode": "id" },
+        "table": { "__rl": true, "value": "Memoria_Sesiones", "mode": "name" },
+        "filterByFormula": "={Session_ID} = '{{ $json.sessionId }}'",
+        "limit": 1,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000002",
+      "name": "Buscar Memoria por Session ID",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [-1140, 0],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "id": "cond-memoria",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "exists", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000003",
+      "name": "Existe Memoria Previa",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-920, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "r1", "name": "session_id", "value": "={{ $('Chat Trigger').item.json.sessionId }}", "type": "string" },
+            { "id": "r2", "name": "chat_input", "value": "={{ $('Chat Trigger').item.json.chatInput }}", "type": "string" },
+            { "id": "r3", "name": "es_usuario_nuevo", "value": "false", "type": "boolean" },
+            { "id": "r4", "name": "estado_caso", "value": "={{ $json.Estado_Caso }}", "type": "string" },
+            { "id": "r5", "name": "resumen_previo", "value": "={{ $json.Resumen_Consolidado }}", "type": "string" },
+            { "id": "r6", "name": "datos_clave", "value": "={{ $json.Datos_Clave }}", "type": "string" },
+            { "id": "r7", "name": "contador_mensajes", "value": "={{ ($json.Contador_Mensajes || 0) + 1 }}", "type": "number" },
+            { "id": "r8", "name": "contexto_memoria", "value": "=Cliente recurrente.\nDatos clave del cliente: {{ $json.Datos_Clave || 'no registrados' }}\nEstado de su ultima solicitud: {{ $json.Estado_Caso || 'sin estado' }}\nResumen consolidado de la ultima conversacion: {{ $json.Resumen_Consolidado || 'sin resumen previo' }}\nCantidad de intercambios previos en esta sesion: {{ $json.Contador_Mensajes || 0 }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000004",
+      "name": "Contexto Sesion Recuperada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-700, -140]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": { "__rl": true, "value": "appF7j7oBbwryhFIM", "mode": "id" },
+        "table": { "__rl": true, "value": "Memoria_Sesiones", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Session_ID": "={{ $('Chat Trigger').item.json.sessionId }}",
+            "Fecha_Actualizacion": "={{ $now.toISO() }}",
+            "Resumen_Consolidado": "",
+            "Estado_Caso": "nuevo",
+            "Datos_Clave": "",
+            "Contador_Mensajes": 0
+          },
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000005",
+      "name": "Registrar Cliente Nuevo",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [-700, 140]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "n1", "name": "session_id", "value": "={{ $('Chat Trigger').item.json.sessionId }}", "type": "string" },
+            { "id": "n2", "name": "chat_input", "value": "={{ $('Chat Trigger').item.json.chatInput }}", "type": "string" },
+            { "id": "n3", "name": "es_usuario_nuevo", "value": "true", "type": "boolean" },
+            { "id": "n4", "name": "estado_caso", "value": "nuevo", "type": "string" },
+            { "id": "n5", "name": "resumen_previo", "value": "", "type": "string" },
+            { "id": "n6", "name": "datos_clave", "value": "", "type": "string" },
+            { "id": "n7", "name": "contador_mensajes", "value": "1", "type": "number" },
+            { "id": "n8", "name": "contexto_memoria", "value": "Primera interaccion de este cliente. No hay historial previo en la base de memoria. No hagas referencia a conversaciones anteriores.", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000006",
+      "name": "Contexto Sesion Nueva",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-480, 140]
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.chat_input }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "CONSULTA_PEDIDO",
+              "description": "El cliente pregunta por un pedido concreto: su estado, cuando llega, si esta demorado, el numero de seguimiento, que compro o cuanto pago. Generalmente menciona un codigo con formato TV-XXXX, un email o su nombre."
+            },
+            {
+              "category": "CONSULTA_GENERAL",
+              "description": "El cliente pregunta por politicas generales de la tienda que no dependen de un pedido concreto: plazos genericos de envio, medios de pago aceptados, cuotas, politica de devoluciones o garantias."
+            }
+          ]
+        },
+        "options": {
+          "fallback": "other",
+          "systemPromptTemplate": "Sos el router de triaje de TiendaVerde. Clasifica el mensaje del cliente en UNA sola de las categorias disponibles. La taxonomia es cerrada: no inventes categorias nuevas. Si el mensaje no encaja con claridad en ninguna, o expresa un reclamo legal, un pedido de reembolso o enojo sostenido, no lo fuerces: dejalo sin clasificar para que se derive a un supervisor humano.\n\nCategorias:\n{categories}"
+        }
+      },
+      "id": "b3000000-0000-4000-8000-000000000007",
+      "name": "Router de Triaje",
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [-240, 0]
+    },
+    {
+      "parameters": { "model": "nvidia/nemotron-3.5-lightning:free", "options": { "temperature": 0 } },
+      "id": "b3000000-0000-4000-8000-000000000008",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [-280, 240]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "c1", "name": "numero_pedido", "value": "={{ ($json.chat_input || '').toUpperCase().match(/TV-\\d{4}/)?.[0] || '' }}", "type": "string" },
+            { "id": "c2", "name": "session_id", "value": "={{ $json.session_id }}", "type": "string" },
+            { "id": "c3", "name": "consulta_cliente", "value": "={{ $json.chat_input }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000009",
+      "name": "Contrato Worker Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [40, -220]
+    },
+    {
+      "parameters": {
+        "workflowId": { "__rl": true, "value": "", "mode": "list", "cachedResultName": "SELECCIONAR: M2 - Worker 1 - Datos de Pedidos" },
+        "options": { "waitForSubWorkflow": true }
+      },
+      "id": "b3000000-0000-4000-8000-000000000010",
+      "name": "Ejecutar Worker Datos",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [260, -220]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "d1", "name": "consulta_cliente", "value": "={{ $('Router de Triaje').first().json.chat_input }}", "type": "string" },
+            { "id": "d2", "name": "status_datos", "value": "={{ $json.status }}", "type": "string" },
+            { "id": "d3", "name": "datos_pedido", "value": "={{ $json.data }}", "type": "object" },
+            { "id": "d4", "name": "contexto_memoria", "value": "={{ $('Router de Triaje').first().json.contexto_memoria }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000011",
+      "name": "Contrato Worker Redaccion",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, -220]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "g1", "name": "consulta_cliente", "value": "={{ $json.chat_input }}", "type": "string" },
+            { "id": "g2", "name": "status_datos", "value": "sin_datos_de_pedido", "type": "string" },
+            { "id": "g3", "name": "datos_pedido", "value": "={{ {} }}", "type": "object" },
+            { "id": "g4", "name": "contexto_memoria", "value": "={{ $json.contexto_memoria }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000012",
+      "name": "Contrato Worker Redaccion (General)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "workflowId": { "__rl": true, "value": "", "mode": "list", "cachedResultName": "SELECCIONAR: M3 - Worker 2 - Redaccion con Memoria" },
+        "options": { "waitForSubWorkflow": true }
+      },
+      "id": "b3000000-0000-4000-8000-000000000013",
+      "name": "Ejecutar Worker Redaccion",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [700, -110]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "e1", "name": "status", "value": "escalado", "type": "string" },
+            { "id": "e2", "name": "codigo", "value": "ESCALAMIENTO_HUMANO", "type": "string" },
+            { "id": "e3", "name": "mensaje", "value": "Intencion fuera de la taxonomia cerrada o de riesgo comercial. Ningun worker fue invocado.", "type": "string" },
+            { "id": "e4", "name": "data.respuesta_cliente", "value": "Voy a derivar tu caso a un representante del equipo, que te va a contactar dentro de las proximas 24 horas habiles.", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000014",
+      "name": "Via de Escape - Supervisor Humano",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [260, 220]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "m1", "name": "session_id", "value": "={{ $('Router de Triaje').first().json.session_id }}", "type": "string" },
+            { "id": "m2", "name": "chat_input", "value": "={{ $('Router de Triaje').first().json.chat_input }}", "type": "string" },
+            { "id": "m3", "name": "contador_mensajes", "value": "={{ $('Router de Triaje').first().json.contador_mensajes }}", "type": "number" },
+            { "id": "m4", "name": "resumen_previo", "value": "={{ $('Router de Triaje').first().json.resumen_previo }}", "type": "string" },
+            { "id": "m5", "name": "respuesta_cliente", "value": "={{ $json.data.respuesta_cliente }}", "type": "string" },
+            { "id": "m6", "name": "estado_caso", "value": "={{ $('Via de Escape - Supervisor Humano').isExecuted ? 'escalado' : 'en_curso' }}", "type": "string" },
+            { "id": "m7", "name": "datos_clave", "value": "={{ $('Ejecutar Worker Datos').isExecuted && $('Ejecutar Worker Datos').first().json.status === 'success' ? 'Cliente: ' + $('Ejecutar Worker Datos').first().json.data.nombre_cliente + ' | Ultimo pedido: ' + $('Ejecutar Worker Datos').first().json.data.numero_pedido + ' (' + $('Ejecutar Worker Datos').first().json.data.estado + ')' : $('Router de Triaje').first().json.datos_clave }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000015",
+      "name": "Consolidar Memoria",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [940, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose", "version": 2 },
+          "conditions": [
+            {
+              "id": "cond-5msg",
+              "leftValue": "={{ $json.contador_mensajes }}",
+              "rightValue": 5,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000016",
+      "name": "Supera 5 Intercambios",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1160, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sos un motor de sintesis para una base de memoria de largo plazo. Devolves EXCLUSIVAMENTE un objeto JSON valido. Sin texto antes ni despues. Sin markdown. Sin bloques de codigo.\n\nFormato exacto y obligatorio:\n{\"asunto_principal\": \"string\", \"puntos_clave\": [\"string\"], \"accion_requerida\": \"string\"}\n\nReglas estrictas:\n1. asunto_principal: una frase de maximo 12 palabras que resuma de que se trata el caso.\n2. puntos_clave: entre 2 y 4 elementos, cada uno de maximo 15 palabras. Solo datos duros accionables: numeros de pedido, estados, fechas, compromisos asumidos.\n3. accion_requerida: que queda pendiente del lado de la empresa. Si no hay nada pendiente, escribi exactamente \"ninguna\".\n4. Prohibido incluir transcripciones completas, HTML, logs tecnicos, payloads o cualquier texto que no sea sintesis.\n\nRESUMEN CONSOLIDADO PREVIO DE ESTA SESION:\n{{ $json.resumen_previo || 'sin historial previo' }}\n\nULTIMO INTERCAMBIO A INCORPORAR:\nCliente: {{ $json.chat_input }}\nAgente: {{ $json.respuesta_cliente }}",
+        "batching": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000017",
+      "name": "Summarizer",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [1400, -140]
+    },
+    {
+      "parameters": { "model": "nvidia/nemotron-3.5-lightning:free", "options": { "temperature": 0 } },
+      "id": "b3000000-0000-4000-8000-000000000018",
+      "name": "Modelo Economico (Summarizer)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [1400, 60]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Blindaje del contrato de summarization.\n// El modelo puede envolver el JSON en markdown o agregar texto: extraemos y validamos.\nconst raw = ($input.first().json.text ?? $input.first().json.response ?? '').toString();\n\nlet parsed;\ntry {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  parsed = JSON.parse(match ? match[0] : raw);\n} catch (e) {\n  parsed = {\n    asunto_principal: 'No se pudo sintetizar la conversacion',\n    puntos_clave: [],\n    accion_requerida: 'revision manual'\n  };\n}\n\n// Normalizamos: la base guarda un objeto compacto, nunca la conversacion cruda.\nconst limpio = {\n  asunto_principal: (parsed.asunto_principal || '').toString().slice(0, 200),\n  puntos_clave: Array.isArray(parsed.puntos_clave) ? parsed.puntos_clave.slice(0, 4) : [],\n  accion_requerida: (parsed.accion_requerida || 'ninguna').toString().slice(0, 200)\n};\n\nreturn [{ json: { resumen_consolidado: JSON.stringify(limpio) } }];"
+      },
+      "id": "b3000000-0000-4000-8000-000000000019",
+      "name": "Parsear Resumen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1620, -140]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "p1", "name": "resumen_consolidado", "value": "={{ $json.resumen_previo }}", "type": "string" }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000020",
+      "name": "Mantener Resumen Previo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1400, 200]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": { "__rl": true, "value": "appF7j7oBbwryhFIM", "mode": "id" },
+        "table": { "__rl": true, "value": "Memoria_Sesiones", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Session_ID": "={{ $('Consolidar Memoria').first().json.session_id }}",
+            "Fecha_Actualizacion": "={{ $now.toISO() }}",
+            "Resumen_Consolidado": "={{ $json.resumen_consolidado }}",
+            "Estado_Caso": "={{ $('Consolidar Memoria').first().json.estado_caso }}",
+            "Datos_Clave": "={{ $('Consolidar Memoria').first().json.datos_clave }}",
+            "Contador_Mensajes": "={{ $('Consolidar Memoria').first().json.contador_mensajes }}"
+          },
+          "matchingColumns": ["Session_ID"],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "b3000000-0000-4000-8000-000000000021",
+      "name": "Persistir Memoria",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [1860, 0]
+    },
+    {
+      "parameters": {
+        "sendTo": "paivaignacio09@gmail.com",
+        "subject": "=[MEMORIA M3] Ejecucion {{ $execution.id }} - Sesion {{ $('Consolidar Memoria').first().json.session_id }}",
+        "emailType": "text",
+        "message": "=LOG DE TRAZABILIDAD Y MEMORIA PERSISTENTE\n\nID de ejecucion: {{ $execution.id }}\nFecha y hora: {{ $now.format('dd/MM/yyyy HH:mm:ss') }}\nSession ID: {{ $('Consolidar Memoria').first().json.session_id }}\n\n--- 1. CAPA DE MEMORIA (LECTURA) ---\nUsuario nuevo: {{ $('Contexto Sesion Nueva').isExecuted ? 'SI - se creo registro inicial en Airtable' : 'NO - se recupero memoria existente' }}\nIntercambio numero: {{ $('Consolidar Memoria').first().json.contador_mensajes }}\nContexto inyectado al agente:\n{{ $('Router de Triaje').first().json.contexto_memoria }}\n\n--- 2. CONSULTA ORIGINAL ---\n{{ $('Consolidar Memoria').first().json.chat_input }}\n\n--- 3. WORKERS INVOCADOS ---\nWorker 1 (datos): {{ $('Ejecutar Worker Datos').isExecuted ? 'INVOCADO' : 'no invocado' }}\nWorker 2 (redaccion): {{ $('Ejecutar Worker Redaccion').isExecuted ? 'INVOCADO' : 'no invocado' }}\nEscalamiento humano: {{ $('Via de Escape - Supervisor Humano').isExecuted ? 'SI' : 'no' }}\n\n--- 4. RESPUESTA AL CLIENTE ---\n{{ $('Consolidar Memoria').first().json.respuesta_cliente }}\n\n--- 5. CAPA DE MEMORIA (ESCRITURA) ---\nSummarization disparada: {{ $('Summarizer').isExecuted ? 'SI - supero los 5 intercambios' : 'NO - se mantiene el resumen previo' }}\nResumen consolidado persistido: {{ $('Persistir Memoria').first().json.Resumen_Consolidado }}\nEstado del caso: {{ $('Consolidar Memoria').first().json.estado_caso }}\nDatos clave: {{ $('Consolidar Memoria').first().json.datos_clave }}\n\n--- FIN DEL LOG ---",
+        "options": { "appendAttribution": false }
+      },
+      "id": "b3000000-0000-4000-8000-000000000022",
+      "name": "Log de Trazabilidad",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2080, 0],
+      "webhookId": "b3000000-0000-4000-8000-0000000000bb"
+    }
+  ],
+  "connections": {
+    "Chat Trigger": { "main": [[{ "node": "Buscar Memoria por Session ID", "type": "main", "index": 0 }]] },
+    "Buscar Memoria por Session ID": { "main": [[{ "node": "Existe Memoria Previa", "type": "main", "index": 0 }]] },
+    "Existe Memoria Previa": {
+      "main": [
+        [{ "node": "Contexto Sesion Recuperada", "type": "main", "index": 0 }],
+        [{ "node": "Registrar Cliente Nuevo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Registrar Cliente Nuevo": { "main": [[{ "node": "Contexto Sesion Nueva", "type": "main", "index": 0 }]] },
+    "Contexto Sesion Recuperada": { "main": [[{ "node": "Router de Triaje", "type": "main", "index": 0 }]] },
+    "Contexto Sesion Nueva": { "main": [[{ "node": "Router de Triaje", "type": "main", "index": 0 }]] },
+    "OpenRouter Chat Model": { "ai_languageModel": [[{ "node": "Router de Triaje", "type": "ai_languageModel", "index": 0 }]] },
+    "Router de Triaje": {
+      "main": [
+        [{ "node": "Contrato Worker Datos", "type": "main", "index": 0 }],
+        [{ "node": "Contrato Worker Redaccion (General)", "type": "main", "index": 0 }],
+        [{ "node": "Via de Escape - Supervisor Humano", "type": "main", "index": 0 }]
+      ]
+    },
+    "Contrato Worker Datos": { "main": [[{ "node": "Ejecutar Worker Datos", "type": "main", "index": 0 }]] },
+    "Ejecutar Worker Datos": { "main": [[{ "node": "Contrato Worker Redaccion", "type": "main", "index": 0 }]] },
+    "Contrato Worker Redaccion": { "main": [[{ "node": "Ejecutar Worker Redaccion", "type": "main", "index": 0 }]] },
+    "Contrato Worker Redaccion (General)": { "main": [[{ "node": "Ejecutar Worker Redaccion", "type": "main", "index": 0 }]] },
+    "Ejecutar Worker Redaccion": { "main": [[{ "node": "Consolidar Memoria", "type": "main", "index": 0 }]] },
+    "Via de Escape - Supervisor Humano": { "main": [[{ "node": "Consolidar Memoria", "type": "main", "index": 0 }]] },
+    "Consolidar Memoria": { "main": [[{ "node": "Supera 5 Intercambios", "type": "main", "index": 0 }]] },
+    "Supera 5 Intercambios": {
+      "main": [
+        [{ "node": "Summarizer", "type": "main", "index": 0 }],
+        [{ "node": "Mantener Resumen Previo", "type": "main", "index": 0 }]
+      ]
+    },
+    "Modelo Economico (Summarizer)": { "ai_languageModel": [[{ "node": "Summarizer", "type": "ai_languageModel", "index": 0 }]] },
+    "Summarizer": { "main": [[{ "node": "Parsear Resumen", "type": "main", "index": 0 }]] },
+    "Parsear Resumen": { "main": [[{ "node": "Persistir Memoria", "type": "main", "index": 0 }]] },
+    "Mantener Resumen Previo": { "main": [[{ "node": "Persistir Memoria", "type": "main", "index": 0 }]] },
+    "Persistir Memoria": { "main": [[{ "node": "Log de Trazabilidad", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "tags": []
+}

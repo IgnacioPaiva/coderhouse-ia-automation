@@ -1,0 +1,50 @@
+{
+  "name": "M5 - Nodos herramienta RAG (pegar en Worker 2)",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "base_politicas_tiendaverde",
+        "toolDescription": "Base documental oficial de TiendaVerde. Consultala SIEMPRE que la pregunta sea sobre politicas de la tienda: envios, plazos y costos de entrega, medios de pago, cuotas, facturacion, devoluciones, derecho de arrepentimiento, cambios, garantias, cuenta de cliente, programa de beneficios y protocolo de atencion. Devuelve fragmentos textuales del Manual de Politicas v4.2 con su numero de seccion.",
+        "memoryKey": "politicas-tiendaverde",
+        "topK": 4
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        400
+      ],
+      "id": "vs-tool",
+      "name": "Base de Politicas (RAG)"
+    },
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        620
+      ],
+      "id": "embeddings-gemini-rag",
+      "name": "Embeddings Gemini RAG"
+    }
+  ],
+  "connections": {
+    "Embeddings Gemini RAG": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Base de Politicas (RAG)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

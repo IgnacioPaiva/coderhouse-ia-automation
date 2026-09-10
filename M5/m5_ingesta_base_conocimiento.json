@@ -1,0 +1,163 @@
+{
+  "name": "M5 - Ingesta Base de Conocimiento",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "trigger-m5",
+      "name": "Ejecutar Ingesta"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Manual de Politicas TiendaVerde v4.2\n// Fuente: markdown producido por LlamaParse (LlamaCloud) a partir del PDF maestro.\n// Limpieza aplicada: tablas HTML convertidas a filas con pipes, marcas de formato\n// eliminadas y seccionado por titulo para conservar la trazabilidad de la cita.\nconst secciones = [\n {\n  \"seccion\": \"Manual de Políticas Comerciales y de Atención al Cliente\",\n  \"contenido\": \"Manual de Políticas Comerciales y de Atención al Cliente\\nTiendaVerde S.R.L. — Comercio electrónico de productos para el hogar\\n\\nDocumento maestro institucional · Versión 4.2 · Vigente desde el 1 de agosto de 2026 · Aprobado por Gerencia Comercial · Revisión semestral · Uso interno y base de conocimiento del asistente de atención\"\n },\n {\n  \"seccion\": \"1. Alcance y aplicación\",\n  \"contenido\": \"1. Alcance y aplicación\\nEste manual reúne las políticas comerciales vigentes de TiendaVerde S.R.L. y constituye la única fuente autorizada para responder consultas de clientes sobre envíos, medios de pago, devoluciones, garantías y protección de datos. Toda respuesta al cliente debe fundarse en lo aquí establecido. Ante una situación no contemplada en este documento, corresponde escalar a un representante humano y no improvisar una respuesta.\\n\\nLas condiciones descritas aplican a compras realizadas a través del sitio web y de los canales de atención oficiales de TiendaVerde, con entrega dentro del territorio de la República Argentina.\"\n },\n {\n  \"seccion\": \"2.1 Plazos de entrega\",\n  \"contenido\": \"2.1 Plazos de entrega\\nLos plazos se cuentan en días hábiles desde la confirmación del pago acreditado, no desde el momento de la compra. Las compras con transferencia bancaria comienzan a contar una vez acreditados los fondos, lo que puede demorar hasta 48 horas adicionales.\\n\\nZona de entrega | Plazo estándar | Plazo expreso | Costo estándar | Costo expreso\\nCiudad Autónoma de Buenos Aires | 24 a 48 h hábiles | 24 h hábiles | $3.900 | $7.200\\nGran Buenos Aires | 48 a 72 h hábiles | 24 a 48 h hábiles | $4.600 | $8.500\\nInterior del país | 48 a 72 h hábiles | 48 h hábiles | $5.800 | $11.400\\nPatagonia y zonas extremas | 5 a 7 días hábiles | No disponible | $8.900 | —\"\n },\n {\n  \"seccion\": \"2.1.1 Envío sin cargo\",\n  \"contenido\": \"2.1.1 Envío sin cargo\\nLas compras con un monto total igual o superior a **$85.000** tienen envío estándar sin cargo a todo el país. El beneficio no aplica a la modalidad expresa, sobre la cual se cobra siempre la diferencia correspondiente.\"\n },\n {\n  \"seccion\": \"2.2 Transportistas y seguimiento\",\n  \"contenido\": \"2.2 Transportistas y seguimiento\\nTiendaVerde opera con tres transportistas. El número de seguimiento se genera al momento del despacho y se comunica por correo electrónico dentro de las 24 horas siguientes.\\n\\nTransportista | Cobertura | Formato de seguimiento | Entrega en domicilio\\n\\nAndreani | Todo el país | AN + 9 dígitos | Sí, hasta dos intentos\\nOCA | Todo el país excepto Patagonia austral | OC + 9 dígitos | Sí, hasta tres intentos\\nCorreo Argentino | Todo el país, incluye localidades sin cobertura privada | CA + 9 dígitos | Un intento, luego pasa a sucursal\"\n },\n {\n  \"seccion\": \"2.3 Demoras y entregas fallidas\",\n  \"contenido\": \"2.3 Demoras y entregas fallidas\\nUn pedido se considera **demorado** cuando supera en más de 48 horas hábiles el plazo máximo comprometido para su zona. En ese caso corresponde iniciar un reclamo ante el transportista, cuyo plazo de respuesta es de hasta 5 días hábiles.\\n\\nSi el transportista agota los intentos de entrega sin encontrar a nadie en el domicilio, el paquete queda en la sucursal más cercana durante **10 días corridos**. Vencido ese plazo el envío retorna al depósito y el cliente debe abonar un nuevo costo de envío para reprogramarlo.\\n\\n> **Importante para la atención:** nunca debe comprometerse una fecha de entrega distinta a la informada por el transportista en el sistema de seguimiento. Ante un reclamo por demora, corresponde informar el estado real y el plazo de gestión del reclamo, no estimar una fecha nueva.\"\n },\n {\n  \"seccion\": \"3.1 Medios aceptados\",\n  \"contenido\": \"3.1 Medios aceptados\\nMedio de pago | Cuotas disponibles | Descuento | Acreditación\\nTarjeta de crédito Visa | Hasta 12 cuotas | — | Inmediata\\nTarjeta de crédito Mastercard | Hasta 12 cuotas | — | Inmediata\\nTarjeta de crédito American Express | Hasta 6 cuotas | — | Inmediata\\nTarjeta de débito | Un pago | 5% | Inmediata\\nMercado Pago (saldo en cuenta) | Un pago | 5% | Inmediata\\nTransferencia bancaria | Un pago | 10% | Hasta 48 h hábiles\\nEfectivo en punto de pago | Un pago | — | Hasta 72 h hábiles\"\n },\n {\n  \"seccion\": \"3.2 Cuotas sin interés\",\n  \"contenido\": \"3.2 Cuotas sin interés\\nLas promociones de cuotas sin interés dependen de acuerdos vigentes con cada entidad bancaria y se informan en el momento de la compra. Las condiciones publicadas al momento de la operación son las que rigen: una promoción vencida no puede aplicarse retroactivamente.\\n\\nLos descuentos por medio de pago **no son acumulables** entre sí ni con cupones promocionales.\"\n },\n {\n  \"seccion\": \"3.3 Facturación\",\n  \"contenido\": \"3.3 Facturación\\nLa factura electrónica se emite automáticamente al confirmarse el pago y se envía al correo registrado en la compra dentro de las 24 horas. Para facturación tipo A es obligatorio cargar los datos fiscales antes de finalizar la compra: no es posible modificar el tipo de factura una vez emitida.\"\n },\n {\n  \"seccion\": \"4.1 Derecho de arrepentimiento\",\n  \"contenido\": \"4.1 Derecho de arrepentimiento\\nConforme a la normativa vigente de defensa del consumidor, el cliente puede arrepentirse de su compra dentro de los **10 días corridos** contados desde la recepción del producto, sin necesidad de expresar motivo alguno y sin penalidad.\\n\\nCondiciones para ejercer el derecho de arrepentimiento:\\n\\n- El producto debe estar sin uso, en su empaque original y con todos sus accesorios y etiquetas.\\n- El costo del envío de retorno lo asume TiendaVerde: se coordina el retiro en el domicilio del cliente.\\n- El reintegro se realiza por el mismo medio de pago utilizado, dentro de los 10 días hábiles posteriores a la recepción y verificación del producto en depósito.\"\n },\n {\n  \"seccion\": \"4.2 Devolución por falla de fábrica\",\n  \"contenido\": \"4.2 Devolución por falla de fábrica\\nAnte un defecto de fabricación, el cliente dispone de **30 días corridos** desde la recepción para solicitar el reembolso total del importe abonado, incluido el costo de envío original.\\n\\nEl proceso requiere que el cliente envíe fotografías o video del defecto al canal de atención. Verificada la falla, TiendaVerde coordina el retiro sin cargo y ofrece al cliente la opción entre reembolso total o reposición del producto.\\n\\n**Distinción crítica:** el derecho de arrepentimiento y la devolución por falla de fábrica son dos supuestos distintos, con plazos distintos (10 y 30 días respectivamente) y condiciones distintas. El arrepentimiento no requiere motivo pero exige el producto sin uso; la falla de fábrica admite el producto usado pero exige acreditar el defecto. Confundirlos es el error más frecuente en la atención al cliente.\"\n },\n {\n  \"seccion\": \"4.3 Cambios por talla, color o modelo\",\n  \"contenido\": \"4.3 Cambios por talla, color o modelo\\nSe admiten cambios dentro de los **15 días corridos** desde la recepción, siempre que el producto esté sin uso y en su empaque original. El primer cambio no tiene costo de envío. A partir del segundo cambio sobre la misma compra, el costo del envío corre por cuenta del cliente.\\n\\nSi el producto de reemplazo tiene un precio mayor, se abona la diferencia. Si tiene un precio menor, la diferencia se acredita como crédito en la cuenta del cliente, con una vigencia de 12 meses. **No se devuelve dinero por diferencia de precio en un cambio.**\"\n },\n {\n  \"seccion\": \"4.4 Garantía de los productos\",\n  \"contenido\": \"4.4 Garantía de los productos\\nCategoría de producto | Plazo de garantía | Cobertura | Excluye\\nElectrodomésticos y electrónica | 12 meses | Defectos de fabricación y funcionamiento | Daño por mal uso, golpes, humedad o alteración de tensión\\nPequeños electrodomésticos | 6 meses | Defectos de fabricación | Desgaste de partes consumibles\\nTextiles y blanco | 3 meses | Defectos de costura y confección | Decoloración por lavado fuera de las instrucciones de la etiqueta\\nBazar, vajilla y cerámica | 30 días | Defectos visibles al momento de la recepción | Roturas posteriores a la entrega\\nMuebles y organización | 6 meses | Defectos estructurales y de materiales | Daños por armado incorrecto\\n\\nLa garantía se gestiona directamente con TiendaVerde durante los primeros 30 días. Superado ese plazo, la gestión corresponde al servicio técnico oficial de la marca, cuyos datos figuran en el certificado de garantía que acompaña al producto.\"\n },\n {\n  \"seccion\": \"5.1 Registro y datos personales\",\n  \"contenido\": \"5.1 Registro y datos personales\\nLa creación de una cuenta no es obligatoria para comprar, pero habilita el seguimiento de pedidos, el historial de compras y la acumulación de beneficios. Los datos personales se tratan conforme a la Ley 25.326 de Protección de Datos Personales.\\n\\nEl cliente puede solicitar en cualquier momento el acceso, la rectificación o la supresión de sus datos escribiendo al canal de atención. El plazo de respuesta es de 10 días hábiles.\"\n },\n {\n  \"seccion\": \"5.2 Programa Verde\",\n  \"contenido\": \"5.2 Programa Verde\\nNivel | Requisito de permanencia | Beneficio\\nInicial | Registro | Acceso a preventas y cupón de bienvenida del 10%\\nFrecuente | 3 compras en 12 meses | Envío sin cargo desde $60.000 y 5% de crédito en cada compra\\nDistinguido | 6 compras en 12 meses | Envío siempre sin cargo, 8% de crédito y atención prioritaria\\n\\nLos créditos acumulados tienen una vigencia de 12 meses desde su acreditación y son de uso exclusivo en el sitio. No son transferibles ni convertibles en dinero.\"\n },\n {\n  \"seccion\": \"6.1 Canales y horarios\",\n  \"contenido\": \"6.1 Canales y horarios\\nCanal | Horario de atención | Tiempo de respuesta comprometido\\nChat del sitio web | Lunes a viernes de 9 a 18 h | Menos de 15 minutos\\nCorreo electrónico | Recepción permanente | Menos de 24 horas hábiles\\nWhatsApp | Lunes a viernes de 9 a 18 h | Menos de 30 minutos\\nTelefónico | Lunes a viernes de 10 a 17 h | Atención inmediata\"\n },\n {\n  \"seccion\": \"6.2 Situaciones que requieren derivación a un representante humano\",\n  \"contenido\": \"6.2 Situaciones que requieren derivación a un representante humano\\nLas siguientes situaciones exceden el alcance de la atención automatizada y deben derivarse siempre:\\n\\n1. Reclamos de reembolso o devolución de dinero, cualquiera sea el monto.\\n2. Menciones a acciones legales, abogados, denuncias o Defensa del Consumidor.\\n3. Solicitudes de excepción a las políticas de este manual.\\n4. Reclamos por productos dañados durante el transporte que requieran peritaje.\\n5. Disconformidad sostenida del cliente luego de una respuesta ya brindada.\\n6. Cualquier consulta cuya respuesta no esté contenida en este documento.\"\n },\n {\n  \"seccion\": \"6.3 Información que nunca debe solicitarse\",\n  \"contenido\": \"6.3 Información que nunca debe solicitarse\\nBajo ninguna circunstancia y por ningún canal debe requerirse al cliente: número completo de tarjeta de crédito o débito, código de seguridad, clave de home banking, contraseña de su cuenta ni fotografía de su documento de identidad. TiendaVerde no solicita estos datos por chat, correo ni teléfono.\"\n },\n {\n  \"seccion\": \"7. Anexo · Glosario operativo\",\n  \"contenido\": \"7. Anexo · Glosario operativo\\nTérmino | Definición\\nDías hábiles | Días de lunes a viernes, excluidos feriados nacionales.\\nDías corridos | Todos los días del calendario, incluidos sábados, domingos y feriados.\\nPedido recibido | La compra fue registrada pero el pago aún no está acreditado.\\nEn preparación | Pago acreditado; el pedido se está armando en depósito.\\nDespachado | El pedido fue entregado al transportista y tiene número de seguimiento activo.\\nDemorado | Supera en más de 48 h hábiles el plazo máximo comprometido para su zona.\\nEntregado | El transportista confirmó la recepción en el domicilio o en sucursal.\\nCrédito en cuenta | Saldo a favor del cliente, de uso exclusivo en el sitio, con vigencia de 12 meses.\\n\\nDocumento controlado. Toda modificación requiere aprobación de Gerencia Comercial y genera una nueva versión. La versión vigente es la publicada en el repositorio interno de políticas. Próxima revisión programada: febrero de 2027.\"\n }\n];\nreturn secciones.map(s => ({ json: s }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "id": "code-m5",
+      "name": "Cargar Manual de Politicas"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": "politicas-tiendaverde",
+        "clearStore": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        0
+      ],
+      "id": "vs-insert",
+      "name": "Simple Vector Store - Insertar"
+    },
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        220
+      ],
+      "id": "embeddings-google-gemini",
+      "name": "Embeddings Google Gemini"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.contenido }}",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "seccion",
+                "value": "={{ $json.seccion }}"
+              },
+              {
+                "name": "fuente",
+                "value": "Manual de Politicas TiendaVerde v4.2 (LlamaParse)"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        600,
+        220
+      ],
+      "id": "loader-m5",
+      "name": "Cargar Documento"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        640,
+        420
+      ],
+      "id": "splitter-m5",
+      "name": "Recursive Character Text Splitter"
+    }
+  ],
+  "connections": {
+    "Ejecutar Ingesta": {
+      "main": [
+        [
+          {
+            "node": "Cargar Manual de Politicas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar Manual de Politicas": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar Documento": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Cargar Documento",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -6,7 +6,7 @@ Proyecto integrador único: **TiendaVerde**, un sistema agéntico de soporte y v
 
 ## Arquitectura actual
 
-Chat y casilla de correo → filtro anti auto-reply → memoria persistente por sesión → router de triaje con taxonomía cerrada → manager que delega en workers especialistas vía sub-workflows → base de conocimiento documental consultada como herramienta → summarization automática → integraciones con CRM, Slack y Gmail → log de trazabilidad.
+Chat y casilla de correo → filtro anti auto-reply → memoria persistente por sesión → router de triaje con taxonomía cerrada → manager que delega en workers especialistas vía sub-workflows → base de conocimiento documental consultada como herramienta → supervisor automático de calidad que audita la respuesta antes de entregarla → summarization automática → integraciones con CRM, Slack y Gmail → log de auditoría y trazabilidad.
 
 ## Entregas
 
@@ -19,7 +19,7 @@ Chat y casilla de correo → filtro anti auto-reply → memoria persistente por 
 | **M5** | Base de conocimiento documental (RAG): parseo con LlamaParse, vectorización con embeddings de Gemini, recuperación como herramienta del agente redactor, citación de fuentes y regla de contingencia | [`M5/`](M5/) |
 | M6 | Capa de voz (STT / TTS) | _pendiente_ |
 | **M7** | Diseño arquitectónico de un sistema agéntico vertical de industria — documento de consultoría, sin implementación | [`M7/`](M7/) |
-| M8 | Supervisor AI-as-a-Judge y dashboard de calidad | _pendiente_ |
+| **M8** | Supervisor AI-as-a-Judge: segundo agente que audita cada respuesta contra sus fuentes, con métricas separadas de recuperación y generación, tres rutas de veredicto y medición comparativa A/B de arquitecturas | [`M8/`](M8/) |
 | **M9** | Gobernanza, costos y monitoreo del sistema en producción — documento de consultoría, sin implementación | [`M9/`](M9/) |
 
 ## Stack
@@ -34,6 +34,10 @@ n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · L
 
 **Alcance de la base vectorial.** El nodo Simple Vector Store de n8n almacena bajo la clave de memoria **prefijada con el identificador del workflow**. Dos workflows distintos con la misma Memory Key no comparten datos. Por eso la ingesta de la base documental vive como rama independiente dentro del mismo workflow que la consume, y no como workflow separado.
 
+**Separación de modelos por rol.** El router de triaje, el agente redactor y el juez supervisor corren sobre modelos distintos, por dos razones independientes. Metodológica: un juez del mismo modelo que el agente evaluado incurre en sesgo de autopreferencia. Operativa: la capa gratuita de Gemini limita a **20 solicitudes por día y por modelo**, de modo que concentrar los tres roles en un solo modelo agota la cuota antes de terminar una batería de diez ejecuciones.
+
+**Contexto del evaluador.** Los fragmentos que el agente recupera viven dentro de su bucle de razonamiento y se descartan al terminar la ejecución. Para que el juez pueda auditar contra las fuentes reales hay que activar la devolución de pasos intermedios en el agente y extraer de ahí únicamente las observaciones: el volcado crudo incluye la maquinaria interna del framework y desplaza al texto útil fuera de cualquier límite razonable de longitud. Un juez mal alimentado produce veredictos negativos indistinguibles de fallas reales del sistema evaluado.
+
 **Limitaciones declaradas del RAG.** La base reside en memoria del proceso y se pierde al reiniciar n8n; el Simple Vector Store no expone umbral de similitud, por lo que el control de calidad de la recuperación está delegado al system prompt; y la reindexación es manual. Las tres están documentadas con su vía de resolución en el informe del M5.
 
 ## Cómo importar
@@ -41,3 +45,5 @@ n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · L
 n8n → menú ⋮ → **Import from File** → seleccionar el `.json`. Requiere configurar credenciales propias: las claves no viajan en la exportación de n8n. En los módulos con sub-workflows, importar primero los workers y después el manager.
 
 Para el M5, ejecutar una vez el workflow de ingesta antes de consultar: sin ese paso el agente recupera cero fragmentos y responde correctamente que no dispone del dato.
+
+Para el M8, importar primero el sub-workflow del juez y después pegar los nodos del supervisor en el manager: el nodo de ejecución necesita que el sub-workflow exista para poder seleccionarlo.

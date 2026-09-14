@@ -1,0 +1,823 @@
+{
+  "name": "M6 - Circuito Cerrado de Voz - TiendaVerde",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": false
+        }
+      },
+      "id": "3316785f-c5b4-40af-b5ac-aec63b018f89",
+      "name": "Telegram Trigger - Nota de Voz",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -688,
+        928
+      ],
+      "webhookId": "m6-telegram-voice-0001",
+      "credentials": {
+        "telegramApi": {
+          "id": "u3ffrs3MgOQMCME5",
+          "name": "TiendaVerde Atencion bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger - Nota de Voz').isExecuted ? $json.message.voice.file_id : $json.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "02682e4e-4d22-4713-8724-074f15fe1e72",
+      "name": "Descargar Audio Binario",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -656,
+        128
+      ],
+      "webhookId": "d3786afa-92cc-404c-9a81-f23076dda7ac",
+      "credentials": {
+        "telegramApi": {
+          "id": "u3ffrs3MgOQMCME5",
+          "name": "TiendaVerde Atencion bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "es"
+        }
+      },
+      "id": "330e40bf-823f-4ee3-b53b-3e64a146e7c2",
+      "name": "Whisper - Transcribir Voz",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -816,
+        -144
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "doQmJ2MA0ua0RjMs",
+          "name": "OpenAI account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "whisper-large-v3"
+            },
+            {
+              "name": "language",
+              "value": "es"
+            },
+            {
+              "name": "response_format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "146f7bcb-eeda-4418-94f7-da4cad70676f",
+      "name": "ALTERNATIVA - Whisper via Groq (gratuito)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        128
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "QQrcvMJ19TDSwkIA",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "Alternativa sin costo al nodo OpenAI Whisper. Groq sirve el mismo modelo Whisper Large v3 con capa gratuita y sin tarjeta. El nodo nativo de n8n tiene el modelo whisper-1 fijo y no admite otro proveedor, por eso la alternativa exige un HTTP Request. Devuelve el texto en la propiedad text, igual que el nodo nativo, de modo que el resto del circuito no cambia."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ ($json.text || '').trim().length }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "c3",
+              "leftValue": "={{ ($json.text || '').trim().split(/\\s+/).length }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bfe4fbc8-5dc5-487f-b2ac-53bb859de33b",
+      "name": "Transcripcion Utilizable",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "Con0",
+              "name": "consulta_cliente",
+              "value": "={{ $json.text.trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "Con1",
+              "name": "chat_id",
+              "value": "={{ $('Telegram Trigger - Nota de Voz').isExecuted ? $('Telegram Trigger - Nota de Voz').first().json.message.chat.id : $('Simular Nota de Voz').first().json.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "Con2",
+              "name": "canal",
+              "value": "voz_telegram",
+              "type": "string"
+            },
+            {
+              "id": "Con3",
+              "name": "duracion_audio_seg",
+              "value": "={{ $('Telegram Trigger - Nota de Voz').isExecuted ? $('Telegram Trigger - Nota de Voz').first().json.message.voice.duration : $('Simular Nota de Voz').first().json.duracion }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6a95a84a-8cb4-4a9b-a5f1-c65cc2257060",
+      "name": "Contrato de Voz",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.consulta_cliente }}",
+        "options": {
+          "systemMessage": "## ROL\nSos el asistente de voz de atencion al cliente de TiendaVerde, un e-commerce argentino.\nEl cliente te habla por una nota de voz y vos le contestas hablando.\n\n## CONTENCION FINANCIERA - REGLA INVIOLABLE\nLimita imperativamente la longitud de TODAS tus respuestas escritas a un maximo de\n200 caracteres. Esta regla protege el conteo de caracteres procesados por la API de\nsintesis de voz y no admite excepciones: si la respuesta completa no entra en 200\ncaracteres, priorizas el dato que el cliente pidio y ofreces ampliar en un segundo\nmensaje.\n\n## DISENO CONVERSACIONAL PARA VOZ (VUI)\n1. Una sola idea por respuesta. En voz el oyente no puede releer.\n2. Frases cortas y en orden directo. Nada de subordinadas largas.\n3. Los numeros se escriben como se pronuncian: \"diez dias corridos\", no \"10 dias\".\n4. No uses vinetas, guiones, asteriscos, emojis ni formato: se leen en voz alta.\n5. No cites secciones del manual en la respuesta hablada. La trazabilidad de la fuente\n   queda en el log de la ejecucion, no en el audio del cliente.\n6. Cerra siempre con una accion concreta o una pregunta breve.\n\n## FUNDAMENTACION EN FUENTES\nCuando la consulta sea sobre politicas de la tienda, consulta la herramienta de base\ndocumental antes de responder. Si el dato no figura en los fragmentos recuperados,\nresponde que no lo tenes y ofreces derivar a un representante. Esta prohibido inferir\no aproximar una politica que no este escrita en las fuentes.\n\n## CONSULTA DEL CLIENTE (transcripta de su nota de voz)\n{{ $json.consulta_cliente }}",
+          "maxIterations": 5
+        }
+      },
+      "id": "08bfe71a-0ea4-4c57-8a56-2d83e02cb4fb",
+      "name": "Agente de Voz",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        432,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "041990fe-887b-4862-83c0-947eaed6ae05",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        352,
+        240
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EhydL5OTWUeQfkdO",
+          "name": "Google Gemini(PaLM) Api - Paivaignacio09"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "base_politicas_tiendaverde",
+        "toolDescription": "Base documental oficial de TiendaVerde. Consultala SIEMPRE que la pregunta sea sobre politicas de la tienda: envios, plazos, medios de pago, cuotas, devoluciones, cambios, garantias y protocolo de atencion.",
+        "memoryKey": "politicas-tiendaverde"
+      },
+      "id": "3873cfd3-e2a4-439b-9df3-b264176081ad",
+      "name": "Base de Politicas (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        240
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "47a1bd76-1d81-4398-b322-4506dc3fa650",
+      "name": "Embeddings Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        656,
+        416
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EhydL5OTWUeQfkdO",
+          "name": "Google Gemini(PaLM) Api - Paivaignacio09"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Segundo control de la regla de contencion financiera.\n// El System Prompt le ordena al agente no superar 200 caracteres, pero una\n// instruccion en lenguaje natural es una recomendacion, no una garantia: si el\n// modelo se excede, el costo lo paga la API de sintesis de voz. Este nodo corta\n// por codigo, en el ultimo limite de oracion antes de los 200 caracteres, para\n// no entregar una frase partida al medio.\nconst LIMITE = 200;\nconst crudo = ($input.first().json.output ?? '').toString().trim();\n\nlet texto = crudo;\nlet truncado = false;\n\nif (crudo.length > LIMITE) {\n  const corte = crudo.slice(0, LIMITE);\n  const fin = Math.max(corte.lastIndexOf('. '), corte.lastIndexOf('? '),\n                       corte.lastIndexOf('! '));\n  texto = fin > 60 ? corte.slice(0, fin + 1) : corte.trim() + '.';\n  truncado = true;\n}\n\nreturn [{ json: {\n  texto_para_voz:   texto,\n  caracteres:       texto.length,\n  caracteres_crudo: crudo.length,\n  truncado_por_codigo: truncado,\n  chat_id: $('Contrato de Voz').first().json.chat_id\n}}];"
+      },
+      "id": "d54841da-f604-4892-b741-d71af5bf4421",
+      "name": "Blindaje 200 Caracteres",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendAudio",
+        "chatId": "={{ $('Contrato de Voz').first().json.chat_id }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "id": "a7e13012-474d-4efd-9f92-2f5c609853f0",
+      "name": "Telegram - Send Voice",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        0
+      ],
+      "webhookId": "9d9ec20e-e78c-48e6-8910-66135f7726dc",
+      "credentials": {
+        "telegramApi": {
+          "id": "u3ffrs3MgOQMCME5",
+          "name": "TiendaVerde Atencion bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// PROTOCOLO DE PRIVACIDAD TRANSACCIONAL\n// La voz de una persona es un dato biometrico. Este nodo cierra el circuito\n// descartando de forma explicita todo payload binario del item que continua,\n// de modo que ni el audio entrante del cliente ni el audio sintetizado queden\n// adheridos al resultado de la ejecucion.\n//\n// Este control es complementario, no principal. El control principal es la\n// configuracion del workflow: no se persisten datos de ejecuciones exitosas ni\n// fallidas, de modo que los binarios viven solo en la memoria volatil del\n// proceso durante la ejecucion y se liberan al terminar.\nconst item = $input.first();\nreturn [{ json: {\n  estado: 'respondido_por_voz',\n  canal: 'voz_telegram',\n  chat_id: item.json.chat_id ?? null,\n  caracteres_sintetizados: $('Blindaje 200 Caracteres').first().json.caracteres,\n  binarios_purgados: true,\n  timestamp: new Date().toISOString()\n} }];  // se devuelve json nuevo, sin la propiedad binary"
+      },
+      "id": "717264e3-0ef8-492c-b194-ed5da886ff6b",
+      "name": "Purga de Binarios de Voz",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger - Nota de Voz').first().json.message.chat.id }}",
+        "text": "=No llegue a entender tu mensaje de voz. Puede haber sido muy corto o tener mucho ruido de fondo. Probá grabarlo de nuevo o escribime por texto.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "c854dd35-43d1-4e7b-806b-e5017aac1adf",
+      "name": "Aviso de Audio No Comprensible",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        368
+      ],
+      "webhookId": "83ddabac-2972-48b8-890b-9a205427c7ed",
+      "credentials": {
+        "telegramApi": {
+          "id": "u3ffrs3MgOQMCME5",
+          "name": "TiendaVerde Atencion bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// El audio no utilizable tambien se descarta: un audio corrupto sigue siendo\n// la voz de una persona y no debe quedar adherido a la ejecucion.\nreturn [{ json: { estado: 'audio_descartado', motivo: 'transcripcion_vacia_o_ruido',\n  binarios_purgados: true, timestamp: new Date().toISOString() } }];"
+      },
+      "id": "e45437cf-e3ea-4190-807a-882871fdaaeb",
+      "name": "Purga Binarios - Rama Fallida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "hpp4J3VqNfWAUOO0d1Us",
+          "mode": "list",
+          "cachedResultName": "Bella - Professional, Bright, Warm"
+        },
+        "text": "={{ $json.texto_para_voz }}",
+        "additionalOptions": {
+          "model": {
+            "mode": "list",
+            "value": "eleven_multilingual_v2"
+          },
+          "outputFormat": "opus_48000_32",
+          "voiceSettings": "{\n  \"stability\": 0.45,\n  \"similarity_boost\": 0.80,\n  \"style\": 0,\n  \"use_speaker_boost\": true,\n  \"speed\": 1\n}"
+        },
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        912,
+        0
+      ],
+      "id": "2aaec8fb-823b-4589-96f4-a8ef2023ab35",
+      "name": "Convert text to speech",
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "Cbl4taXvX9Mdojz9",
+          "name": "ElevenLabs account paivaignacio09"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        336
+      ],
+      "id": "9e3e03d2-29bd-4dbd-9ecb-0ce83b62a1fc",
+      "name": "Ejecutar Ingesta"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Manual de Politicas TiendaVerde v4.2\n// Fuente: markdown producido por LlamaParse (LlamaCloud) a partir del PDF maestro.\n// Limpieza aplicada: tablas HTML convertidas a filas con pipes, marcas de formato\n// eliminadas y seccionado por titulo para conservar la trazabilidad de la cita.\nconst secciones = [\n {\n  \"seccion\": \"Manual de Políticas Comerciales y de Atención al Cliente\",\n  \"contenido\": \"Manual de Políticas Comerciales y de Atención al Cliente\\nTiendaVerde S.R.L. — Comercio electrónico de productos para el hogar\\n\\nDocumento maestro institucional · Versión 4.2 · Vigente desde el 1 de agosto de 2026 · Aprobado por Gerencia Comercial · Revisión semestral · Uso interno y base de conocimiento del asistente de atención\"\n },\n {\n  \"seccion\": \"1. Alcance y aplicación\",\n  \"contenido\": \"1. Alcance y aplicación\\nEste manual reúne las políticas comerciales vigentes de TiendaVerde S.R.L. y constituye la única fuente autorizada para responder consultas de clientes sobre envíos, medios de pago, devoluciones, garantías y protección de datos. Toda respuesta al cliente debe fundarse en lo aquí establecido. Ante una situación no contemplada en este documento, corresponde escalar a un representante humano y no improvisar una respuesta.\\n\\nLas condiciones descritas aplican a compras realizadas a través del sitio web y de los canales de atención oficiales de TiendaVerde, con entrega dentro del territorio de la República Argentina.\"\n },\n {\n  \"seccion\": \"2.1 Plazos de entrega\",\n  \"contenido\": \"2.1 Plazos de entrega\\nLos plazos se cuentan en días hábiles desde la confirmación del pago acreditado, no desde el momento de la compra. Las compras con transferencia bancaria comienzan a contar una vez acreditados los fondos, lo que puede demorar hasta 48 horas adicionales.\\n\\nZona de entrega | Plazo estándar | Plazo expreso | Costo estándar | Costo expreso\\nCiudad Autónoma de Buenos Aires | 24 a 48 h hábiles | 24 h hábiles | $3.900 | $7.200\\nGran Buenos Aires | 48 a 72 h hábiles | 24 a 48 h hábiles | $4.600 | $8.500\\nInterior del país | 48 a 72 h hábiles | 48 h hábiles | $5.800 | $11.400\\nPatagonia y zonas extremas | 5 a 7 días hábiles | No disponible | $8.900 | —\"\n },\n {\n  \"seccion\": \"2.1.1 Envío sin cargo\",\n  \"contenido\": \"2.1.1 Envío sin cargo\\nLas compras con un monto total igual o superior a **$85.000** tienen envío estándar sin cargo a todo el país. El beneficio no aplica a la modalidad expresa, sobre la cual se cobra siempre la diferencia correspondiente.\"\n },\n {\n  \"seccion\": \"2.2 Transportistas y seguimiento\",\n  \"contenido\": \"2.2 Transportistas y seguimiento\\nTiendaVerde opera con tres transportistas. El número de seguimiento se genera al momento del despacho y se comunica por correo electrónico dentro de las 24 horas siguientes.\\n\\nTransportista | Cobertura | Formato de seguimiento | Entrega en domicilio\\n\\nAndreani | Todo el país | AN + 9 dígitos | Sí, hasta dos intentos\\nOCA | Todo el país excepto Patagonia austral | OC + 9 dígitos | Sí, hasta tres intentos\\nCorreo Argentino | Todo el país, incluye localidades sin cobertura privada | CA + 9 dígitos | Un intento, luego pasa a sucursal\"\n },\n {\n  \"seccion\": \"2.3 Demoras y entregas fallidas\",\n  \"contenido\": \"2.3 Demoras y entregas fallidas\\nUn pedido se considera **demorado** cuando supera en más de 48 horas hábiles el plazo máximo comprometido para su zona. En ese caso corresponde iniciar un reclamo ante el transportista, cuyo plazo de respuesta es de hasta 5 días hábiles.\\n\\nSi el transportista agota los intentos de entrega sin encontrar a nadie en el domicilio, el paquete queda en la sucursal más cercana durante **10 días corridos**. Vencido ese plazo el envío retorna al depósito y el cliente debe abonar un nuevo costo de envío para reprogramarlo.\\n\\n> **Importante para la atención:** nunca debe comprometerse una fecha de entrega distinta a la informada por el transportista en el sistema de seguimiento. Ante un reclamo por demora, corresponde informar el estado real y el plazo de gestión del reclamo, no estimar una fecha nueva.\"\n },\n {\n  \"seccion\": \"3.1 Medios aceptados\",\n  \"contenido\": \"3.1 Medios aceptados\\nMedio de pago | Cuotas disponibles | Descuento | Acreditación\\nTarjeta de crédito Visa | Hasta 12 cuotas | — | Inmediata\\nTarjeta de crédito Mastercard | Hasta 12 cuotas | — | Inmediata\\nTarjeta de crédito American Express | Hasta 6 cuotas | — | Inmediata\\nTarjeta de débito | Un pago | 5% | Inmediata\\nMercado Pago (saldo en cuenta) | Un pago | 5% | Inmediata\\nTransferencia bancaria | Un pago | 10% | Hasta 48 h hábiles\\nEfectivo en punto de pago | Un pago | — | Hasta 72 h hábiles\"\n },\n {\n  \"seccion\": \"3.2 Cuotas sin interés\",\n  \"contenido\": \"3.2 Cuotas sin interés\\nLas promociones de cuotas sin interés dependen de acuerdos vigentes con cada entidad bancaria y se informan en el momento de la compra. Las condiciones publicadas al momento de la operación son las que rigen: una promoción vencida no puede aplicarse retroactivamente.\\n\\nLos descuentos por medio de pago **no son acumulables** entre sí ni con cupones promocionales.\"\n },\n {\n  \"seccion\": \"3.3 Facturación\",\n  \"contenido\": \"3.3 Facturación\\nLa factura electrónica se emite automáticamente al confirmarse el pago y se envía al correo registrado en la compra dentro de las 24 horas. Para facturación tipo A es obligatorio cargar los datos fiscales antes de finalizar la compra: no es posible modificar el tipo de factura una vez emitida.\"\n },\n {\n  \"seccion\": \"4.1 Derecho de arrepentimiento\",\n  \"contenido\": \"4.1 Derecho de arrepentimiento\\nConforme a la normativa vigente de defensa del consumidor, el cliente puede arrepentirse de su compra dentro de los **10 días corridos** contados desde la recepción del producto, sin necesidad de expresar motivo alguno y sin penalidad.\\n\\nCondiciones para ejercer el derecho de arrepentimiento:\\n\\n- El producto debe estar sin uso, en su empaque original y con todos sus accesorios y etiquetas.\\n- El costo del envío de retorno lo asume TiendaVerde: se coordina el retiro en el domicilio del cliente.\\n- El reintegro se realiza por el mismo medio de pago utilizado, dentro de los 10 días hábiles posteriores a la recepción y verificación del producto en depósito.\"\n },\n {\n  \"seccion\": \"4.2 Devolución por falla de fábrica\",\n  \"contenido\": \"4.2 Devolución por falla de fábrica\\nAnte un defecto de fabricación, el cliente dispone de **30 días corridos** desde la recepción para solicitar el reembolso total del importe abonado, incluido el costo de envío original.\\n\\nEl proceso requiere que el cliente envíe fotografías o video del defecto al canal de atención. Verificada la falla, TiendaVerde coordina el retiro sin cargo y ofrece al cliente la opción entre reembolso total o reposición del producto.\\n\\n**Distinción crítica:** el derecho de arrepentimiento y la devolución por falla de fábrica son dos supuestos distintos, con plazos distintos (10 y 30 días respectivamente) y condiciones distintas. El arrepentimiento no requiere motivo pero exige el producto sin uso; la falla de fábrica admite el producto usado pero exige acreditar el defecto. Confundirlos es el error más frecuente en la atención al cliente.\"\n },\n {\n  \"seccion\": \"4.3 Cambios por talla, color o modelo\",\n  \"contenido\": \"4.3 Cambios por talla, color o modelo\\nSe admiten cambios dentro de los **15 días corridos** desde la recepción, siempre que el producto esté sin uso y en su empaque original. El primer cambio no tiene costo de envío. A partir del segundo cambio sobre la misma compra, el costo del envío corre por cuenta del cliente.\\n\\nSi el producto de reemplazo tiene un precio mayor, se abona la diferencia. Si tiene un precio menor, la diferencia se acredita como crédito en la cuenta del cliente, con una vigencia de 12 meses. **No se devuelve dinero por diferencia de precio en un cambio.**\"\n },\n {\n  \"seccion\": \"4.4 Garantía de los productos\",\n  \"contenido\": \"4.4 Garantía de los productos\\nCategoría de producto | Plazo de garantía | Cobertura | Excluye\\nElectrodomésticos y electrónica | 12 meses | Defectos de fabricación y funcionamiento | Daño por mal uso, golpes, humedad o alteración de tensión\\nPequeños electrodomésticos | 6 meses | Defectos de fabricación | Desgaste de partes consumibles\\nTextiles y blanco | 3 meses | Defectos de costura y confección | Decoloración por lavado fuera de las instrucciones de la etiqueta\\nBazar, vajilla y cerámica | 30 días | Defectos visibles al momento de la recepción | Roturas posteriores a la entrega\\nMuebles y organización | 6 meses | Defectos estructurales y de materiales | Daños por armado incorrecto\\n\\nLa garantía se gestiona directamente con TiendaVerde durante los primeros 30 días. Superado ese plazo, la gestión corresponde al servicio técnico oficial de la marca, cuyos datos figuran en el certificado de garantía que acompaña al producto.\"\n },\n {\n  \"seccion\": \"5.1 Registro y datos personales\",\n  \"contenido\": \"5.1 Registro y datos personales\\nLa creación de una cuenta no es obligatoria para comprar, pero habilita el seguimiento de pedidos, el historial de compras y la acumulación de beneficios. Los datos personales se tratan conforme a la Ley 25.326 de Protección de Datos Personales.\\n\\nEl cliente puede solicitar en cualquier momento el acceso, la rectificación o la supresión de sus datos escribiendo al canal de atención. El plazo de respuesta es de 10 días hábiles.\"\n },\n {\n  \"seccion\": \"5.2 Programa Verde\",\n  \"contenido\": \"5.2 Programa Verde\\nNivel | Requisito de permanencia | Beneficio\\nInicial | Registro | Acceso a preventas y cupón de bienvenida del 10%\\nFrecuente | 3 compras en 12 meses | Envío sin cargo desde $60.000 y 5% de crédito en cada compra\\nDistinguido | 6 compras en 12 meses | Envío siempre sin cargo, 8% de crédito y atención prioritaria\\n\\nLos créditos acumulados tienen una vigencia de 12 meses desde su acreditación y son de uso exclusivo en el sitio. No son transferibles ni convertibles en dinero.\"\n },\n {\n  \"seccion\": \"6.1 Canales y horarios\",\n  \"contenido\": \"6.1 Canales y horarios\\nCanal | Horario de atención | Tiempo de respuesta comprometido\\nChat del sitio web | Lunes a viernes de 9 a 18 h | Menos de 15 minutos\\nCorreo electrónico | Recepción permanente | Menos de 24 horas hábiles\\nWhatsApp | Lunes a viernes de 9 a 18 h | Menos de 30 minutos\\nTelefónico | Lunes a viernes de 10 a 17 h | Atención inmediata\"\n },\n {\n  \"seccion\": \"6.2 Situaciones que requieren derivación a un representante humano\",\n  \"contenido\": \"6.2 Situaciones que requieren derivación a un representante humano\\nLas siguientes situaciones exceden el alcance de la atención automatizada y deben derivarse siempre:\\n\\n1. Reclamos de reembolso o devolución de dinero, cualquiera sea el monto.\\n2. Menciones a acciones legales, abogados, denuncias o Defensa del Consumidor.\\n3. Solicitudes de excepción a las políticas de este manual.\\n4. Reclamos por productos dañados durante el transporte que requieran peritaje.\\n5. Disconformidad sostenida del cliente luego de una respuesta ya brindada.\\n6. Cualquier consulta cuya respuesta no esté contenida en este documento.\"\n },\n {\n  \"seccion\": \"6.3 Información que nunca debe solicitarse\",\n  \"contenido\": \"6.3 Información que nunca debe solicitarse\\nBajo ninguna circunstancia y por ningún canal debe requerirse al cliente: número completo de tarjeta de crédito o débito, código de seguridad, clave de home banking, contraseña de su cuenta ni fotografía de su documento de identidad. TiendaVerde no solicita estos datos por chat, correo ni teléfono.\"\n },\n {\n  \"seccion\": \"7. Anexo · Glosario operativo\",\n  \"contenido\": \"7. Anexo · Glosario operativo\\nTérmino | Definición\\nDías hábiles | Días de lunes a viernes, excluidos feriados nacionales.\\nDías corridos | Todos los días del calendario, incluidos sábados, domingos y feriados.\\nPedido recibido | La compra fue registrada pero el pago aún no está acreditado.\\nEn preparación | Pago acreditado; el pedido se está armando en depósito.\\nDespachado | El pedido fue entregado al transportista y tiene número de seguimiento activo.\\nDemorado | Supera en más de 48 h hábiles el plazo máximo comprometido para su zona.\\nEntregado | El transportista confirmó la recepción en el domicilio o en sucursal.\\nCrédito en cuenta | Saldo a favor del cliente, de uso exclusivo en el sitio, con vigencia de 12 meses.\\n\\nDocumento controlado. Toda modificación requiere aprobación de Gerencia Comercial y genera una nueva versión. La versión vigente es la publicada en el repositorio interno de políticas. Próxima revisión programada: febrero de 2027.\"\n }\n];\nreturn secciones.map(s => ({ json: s }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        800
+      ],
+      "id": "f30738cd-be70-4b19-94a9-f79503e00417",
+      "name": "Cargar Manual de Politicas"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": "politicas-tiendaverde",
+        "clearStore": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        800
+      ],
+      "id": "0c8a95a3-6db3-405e-95fa-ab02b3191d0e",
+      "name": "Simple Vector Store - Insertar"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.contenido }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "seccion",
+                "value": "={{ $json.seccion }}"
+              },
+              {
+                "name": "fuente",
+                "value": "Manual de Politicas TiendaVerde v4.2 (LlamaParse)"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1024
+      ],
+      "id": "f0441d86-de33-48e8-99ff-365491ba1469",
+      "name": "Cargar Documento"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        1232
+      ],
+      "id": "2de8d5e3-aabd-495c-b51f-342de97de04e",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        1024
+      ],
+      "id": "40e9ac50-5e9b-49d4-add2-9f3afbb683fb",
+      "name": "Embeddings Google Gemini1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EhydL5OTWUeQfkdO",
+          "name": "Google Gemini(PaLM) Api - Paivaignacio09"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "file_id",
+              "value": "AwACAgEAAxkBAAMCaqXyYK_WddiwbimM4SV6heC8Mk0AAn0JAAIEiTBFo4eG5NTvNts9BA",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "chat_id",
+              "value": "6423996017",
+              "type": "string"
+            },
+            {
+              "id": "s3",
+              "name": "duracion",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -928,
+        208
+      ],
+      "id": "ca01633b-32ec-45fe-a0f6-93bdb6f5ee8f",
+      "name": "Simular Nota de Voz",
+      "notes": "Banco de pruebas. Reemplaza al Telegram Trigger mientras la instancia no tenga URL publica. Los valores se obtienen de api.telegram.org/bot<TOKEN>/getUpdates"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Telegram entrega las notas de voz como .oga. Groq valida la extension del\n// archivo contra una lista cerrada que incluye ogg pero no oga, aunque el\n// contenedor es el mismo. Se renombra el binario sin tocar los bytes.\nconst item = $input.first();\n\nif (item.binary && item.binary.data) {\n  item.binary.data.fileName = 'nota_de_voz.ogg';\n  item.binary.data.fileExtension = 'ogg';\n  item.binary.data.mimeType = 'audio/ogg';\n}\n\nreturn [item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        128
+      ],
+      "id": "3035b74d-711a-4056-8bee-b06237d43167",
+      "name": "Normalizar Extension de Audio"
+    },
+    {
+      "parameters": {
+        "jsCode": "// El nodo de ElevenLabs rotula la salida como mp3 aunque el Output Format sea\n// OPUS. Telegram decide como renderizar el archivo segun el mime declarado, no\n// segun los bytes, asi que hay que corregir la etiqueta.\nconst item = $input.first();\n\nif (item.binary && item.binary.data) {\n  item.binary.data.fileName = 'respuesta.ogg';\n  item.binary.data.fileExtension = 'ogg';\n  item.binary.data.mimeType = 'audio/ogg';\n}\n\nreturn [item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "60c69f5f-05d8-43f6-ad1a-2554e0259a30",
+      "name": "Normalizar Audio de Salida"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger - Nota de Voz": {
+      "main": [
+        []
+      ]
+    },
+    "Descargar Audio Binario": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Extension de Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Whisper - Transcribir Voz": {
+      "main": [
+        []
+      ]
+    },
+    "Transcripcion Utilizable": {
+      "main": [
+        [
+          {
+            "node": "Contrato de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aviso de Audio No Comprensible",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contrato de Voz": {
+      "main": [
+        [
+          {
+            "node": "Agente de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente de Voz": {
+      "main": [
+        [
+          {
+            "node": "Blindaje 200 Caracteres",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Blindaje 200 Caracteres": {
+      "main": [
+        [
+          {
+            "node": "Convert text to speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram - Send Voice": {
+      "main": [
+        [
+          {
+            "node": "Purga de Binarios de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aviso de Audio No Comprensible": {
+      "main": [
+        [
+          {
+            "node": "Purga Binarios - Rama Fallida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente de Voz",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base de Politicas (RAG)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente de Voz",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Base de Politicas (RAG)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert text to speech": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Audio de Salida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar Ingesta": {
+      "main": [
+        [
+          {
+            "node": "Simular Nota de Voz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar Manual de Politicas": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cargar Documento": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Cargar Documento",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store - Insertar",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simular Nota de Voz": {
+      "main": [
+        [
+          {
+            "node": "Descargar Audio Binario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ALTERNATIVA - Whisper via Groq (gratuito)": {
+      "main": [
+        [
+          {
+            "node": "Transcripcion Utilizable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Extension de Audio": {
+      "main": [
+        [
+          {
+            "node": "ALTERNATIVA - Whisper via Groq (gratuito)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Audio de Salida": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Send Voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4a7f733a-0925-4e45-995b-3210b2528836",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59bd4a64c43c4f4e905fd55130931e2ea47cd8dcddd55764db1f9107a7e17c91"
+  },
+  "nodeGroups": [],
+  "id": "6GGhsnkmNdVug2Wt",
+  "tags": []
+}

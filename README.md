@@ -17,14 +17,14 @@ Chat y casilla de correo → filtro anti auto-reply → memoria persistente por 
 | **M3** | Memoria persistente en Airtable por Session_ID, inyección de contexto con delimitadores y summarization automática a JSON estructurado | [`M3/`](M3/) |
 | **M4** | Integraciones reales con CRM, Gmail y Slack: filtro anti auto-reply, look up previo al alta para evitar duplicados, borrador con aprobación humana y limpieza de payload | [`M4/`](M4/) |
 | **M5** | Base de conocimiento documental (RAG): parseo con LlamaParse, vectorización con embeddings de Gemini, recuperación como herramienta del agente redactor, citación de fuentes y regla de contingencia | [`M5/`](M5/) |
-| M6 | Capa de voz (STT / TTS) | _pendiente_ |
+| **M6** | Capa de voz (STT / TTS): nota de voz por Telegram, transcripción, agente con base documental, síntesis y respuesta hablada. Circuito cerrado **operativo con costo cero** | [`M6/`](M6/) |
 | **M7** | Diseño arquitectónico de un sistema agéntico vertical de industria — documento de consultoría, sin implementación | [`M7/`](M7/) |
 | **M8** | Supervisor AI-as-a-Judge: segundo agente que audita cada respuesta contra sus fuentes, con métricas separadas de recuperación y generación, tres rutas de veredicto y medición comparativa A/B de arquitecturas | [`M8/`](M8/) |
 | **M9** | Gobernanza, costos y monitoreo del sistema en producción — documento de consultoría, sin implementación | [`M9/`](M9/) |
 
 ## Stack
 
-n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · LlamaParse (LlamaCloud) · Airtable · Google Sheets (Service Account) · Gmail (OAuth2) · HubSpot · Slack
+n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · Groq (Whisper Large v3) · ElevenLabs (TTS) · Telegram Bot API · LlamaParse (LlamaCloud) · Airtable · Google Sheets (Service Account) · Gmail (OAuth2) · HubSpot · Slack
 
 ## Notas de implementación
 
@@ -37,6 +37,8 @@ n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · L
 **Separación de modelos por rol.** El router de triaje, el agente redactor y el juez supervisor corren sobre modelos distintos, por dos razones independientes. Metodológica: un juez del mismo modelo que el agente evaluado incurre en sesgo de autopreferencia. Operativa: la capa gratuita de Gemini limita a **20 solicitudes por día y por modelo**, de modo que concentrar los tres roles en un solo modelo agota la cuota antes de terminar una batería de diez ejecuciones.
 
 **Contexto del evaluador.** Los fragmentos que el agente recupera viven dentro de su bucle de razonamiento y se descartan al terminar la ejecución. Para que el juez pueda auditar contra las fuentes reales hay que activar la devolución de pasos intermedios en el agente y extraer de ahí únicamente las observaciones: el volcado crudo incluye la maquinaria interna del framework y desplaza al texto útil fuera de cualquier límite razonable de longitud. Un juez mal alimentado produce veredictos negativos indistinguibles de fallas reales del sistema evaluado.
+
+**Audio: dos normalizaciones que no están documentadas en ningún lado.** Telegram entrega las notas de voz como `.oga`; Groq valida la extensión contra una lista cerrada que incluye `ogg` pero no `oga`, aunque el contenedor es el mismo, así que hay que renombrar el binario antes de enviarlo. Y en el sentido inverso, el nodo de ElevenLabs rotula su salida como `audio.textToSpeech.mp3` con mime `audio/mp3` **sin importar el Output Format elegido**: con OPUS seleccionado los bytes son Opus pero la etiqueta miente. Corregir ese mime a `audio/ogg` es suficiente para que Telegram muestre una nota de voz reproducible con el nodo nativo — **no hace falta `sendVoice`**, que n8n no implementa y que obligaría a exponer el token del bot en la URL de un HTTP Request.
 
 **Limitaciones declaradas del RAG.** La base reside en memoria del proceso y se pierde al reiniciar n8n; el Simple Vector Store no expone umbral de similitud, por lo que el control de calidad de la recuperación está delegado al system prompt; y la reindexación es manual. Las tres están documentadas con su vía de resolución en el informe del M5.
 

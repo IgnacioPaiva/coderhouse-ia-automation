@@ -1,12 +1,12 @@
 # Curso IA Automation Specialist — Coderhouse
 
-**Alumno:** Ignacio Paiva
+**Alumno:** Ignacio Paiva · **Proyecto final:** aprobado (95 %) · Cohorte 2026
 
 Proyecto integrador único: **TiendaVerde**, un sistema agéntico de soporte y ventas para e-commerce. El workflow crece módulo a módulo; cada checkpoint parte del anterior y suma una capa nueva.
 
-## Arquitectura actual
+## Arquitectura final
 
-Chat y casilla de correo → filtro anti auto-reply → memoria persistente por sesión → router de triaje con taxonomía cerrada → manager que delega en workers especialistas vía sub-workflows → base de conocimiento documental consultada como herramienta → supervisor automático de calidad que audita la respuesta antes de entregarla → summarization automática → integraciones con CRM, Slack y Gmail → log de auditoría y trazabilidad.
+Webhook asíncrono (acuse HTTP 202 + `trace_id`), chat y casilla de correo → filtro anti auto-reply → memoria persistente por sesión → router de triaje con taxonomía cerrada → manager que delega en workers especialistas vía sub-workflows → base de conocimiento documental consultada como herramienta → supervisor automático de calidad que audita la respuesta antes de entregarla → summarization automática → integraciones con CRM, Slack y Gmail → devolución por callback al canal de origen → log de auditoría y trazabilidad → workflow de alertas ante cualquier falla.
 
 ## Entregas
 
@@ -21,6 +21,8 @@ Chat y casilla de correo → filtro anti auto-reply → memoria persistente por 
 | **M7** | Diseño arquitectónico de un sistema agéntico vertical de industria — documento de consultoría, sin implementación | [`M7/`](M7/) |
 | **M8** | Supervisor AI-as-a-Judge: segundo agente que audita cada respuesta contra sus fuentes, con métricas separadas de recuperación y generación, tres rutas de veredicto y medición comparativa A/B de arquitecturas | [`M8/`](M8/) |
 | **M9** | Gobernanza, costos y monitoreo del sistema en producción — documento de consultoría, sin implementación | [`M9/`](M9/) |
+| **M10** | Caso de negocio y propuesta comercial: horas liberadas, TCO, retorno y período de recupero | [`M10/`](M10/) |
+| **PF** | **Proyecto Final Integrador — Documentación Maestra del Sistema Agéntico (DMSA):** entrada asíncrona por webhook con `trace_id` de punta a punta, supervisor AI-as-a-Judge antes de memoria y CRM, despacho por callback, workflow de alertas de falla, auditoría de 14 veredictos y justificación financiera | [`PF/`](PF/) |
 
 ## Stack
 
@@ -40,6 +42,12 @@ n8n self-hosted (Docker) · OpenRouter · Google Gemini (chat y embeddings) · G
 
 **Audio: dos normalizaciones que no están documentadas en ningún lado.** Telegram entrega las notas de voz como `.oga`; Groq valida la extensión contra una lista cerrada que incluye `ogg` pero no `oga`, aunque el contenedor es el mismo, así que hay que renombrar el binario antes de enviarlo. Y en el sentido inverso, el nodo de ElevenLabs rotula su salida como `audio.textToSpeech.mp3` con mime `audio/mp3` **sin importar el Output Format elegido**: con OPUS seleccionado los bytes son Opus pero la etiqueta miente. Corregir ese mime a `audio/ogg` es suficiente para que Telegram muestre una nota de voz reproducible con el nodo nativo — **no hace falta `sendVoice`**, que n8n no implementa y que obligaría a exponer el token del bot en la URL de un HTTP Request.
 
+**Entrada asíncrona y correlación.** El webhook responde `202 Accepted` desde un nodo propio apenas recibe la consulta y devuelve un `trace_id` (`trc_<fecha>_<id de ejecución>`). El mismo identificador queda en el log del juez, en las alertas de Slack y en la ejecución de n8n, así que una sola clave reconstruye todo el recorrido. Como se arma con el id de ejecución, sobrevive a la pausa del human-in-the-loop.
+
+**Insertar un nodo en el medio cambia lo que reciben los de abajo.** Al poner el juez entre la consolidación y la persistencia de memoria, los nodos que leían `$json` pasaron a recibir la fila del log en lugar de los datos de la sesión: el resumen de Airtable se sobrescribía vacío sin ningún error visible. La corrección fue un nodo que reconstruye explícitamente el contexto de la sesión antes de persistir. Regla práctica: aguas abajo de un punto de inserción, referenciar nodos por nombre y no `$json`.
+
+**Índice en memoria = incidente real.** Tras un reinicio de n8n el índice quedó vacío, el redactor respondió de memoria un plazo equivocado y el juez lo bloqueó por falta de fuentes. Es la mejor evidencia de para qué sirve el supervisor, y también la razón para pasar a un vector store persistente.
+
 **Limitaciones declaradas del RAG.** La base reside en memoria del proceso y se pierde al reiniciar n8n; el Simple Vector Store no expone umbral de similitud, por lo que el control de calidad de la recuperación está delegado al system prompt; y la reindexación es manual. Las tres están documentadas con su vía de resolución en el informe del M5.
 
 ## Cómo importar
@@ -48,4 +56,19 @@ n8n → menú ⋮ → **Import from File** → seleccionar el `.json`. Requiere 
 
 Para el M5, ejecutar una vez el workflow de ingesta antes de consultar: sin ese paso el agente recupera cero fragmentos y responde correctamente que no dispone del dato.
 
+Para el proyecto final, importar `PF/PF_TiendaVerde - Alertas de Falla.json`, después el manager `PF/PF_M4 - ... Ev M8 juez.json`, y en Settings del manager elegir *TiendaVerde - Alertas de Falla* como **Error Workflow**. Prueba local de la entrada asíncrona:
+
+```bash
+curl -X POST http://localhost:5678/webhook-test/tiendaverde-consulta \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"demo-01","chatInput":"¿Cuánto tardan en mandar a Córdoba?","callback_url":"<opcional>"}'
+```
+
 Para el M8, importar primero el sub-workflow del juez y después pegar los nodos del supervisor en el manager: el nodo de ejecución necesita que el sub-workflow exista para poder seleccionarlo.
+
+## Próximos pasos (devolución del proyecto final)
+
+- Re-evaluar con el juez la respuesta corregida (máximo 1 iteración) y derivar a revisión humana si no alcanza 4/5; guardar versión original, crítica y corregida.
+- Dataset de evaluación versionado de 50+ casos, separando ajuste y medición; medir falsos aceptados, falsos rechazados y errores críticos.
+- Pruebas pendientes: callback externo, sesión de más de 5 intercambios, recuperación tras reinicio, timeouts y duplicados; latencia p50/p95.
+- Endurecimiento para datos reales: acceso restringido a variables de entorno, roles mínimos, rotación de credenciales y retención/supresión de datos personales en memoria y logs.

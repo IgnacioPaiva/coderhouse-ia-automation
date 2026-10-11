@@ -1,0 +1,72 @@
+{
+  "name": "TiendaVerde - Alertas de Falla",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "732a47e8-0a7a-4206-9d2b-f2e0324a2d8a",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "#operaciones",
+          "mode": "name"
+        },
+        "text": "=:rotating_light: *Falla en el sistema de atencion TiendaVerde*\n*Workflow:* {{ $json.workflow.name }}\n*Nodo que fallo:* {{ $json.execution.lastNodeExecuted }}\n*Error:* {{ JSON.stringify(String($json.execution.error.message ?? 'sin mensaje')).slice(1,-1) }}\n*Ejecucion:* {{ $json.execution.id }}  |  {{ $json.execution.url }}\nEl cliente NO recibio respuesta automatica. Revisar y responder manualmente.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "b7204697-2062-41c7-9672-f8bea82856d7",
+      "name": "Alertar al Equipo Humano",
+      "webhookId": "c6ff3af7-5255-47ad-a360-e90d185a137f",
+      "credentials": {
+        "slackApi": {
+          "id": "79HfO4ltClNhwUKM",
+          "name": "Slack account Paivaignacio09"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Alertar al Equipo Humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4f9ae8b7-4b16-4221-a66f-ab0458799e4a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59bd4a64c43c4f4e905fd55130931e2ea47cd8dcddd55764db1f9107a7e17c91"
+  },
+  "nodeGroups": [],
+  "id": "h31rmGd2wMztmUDj",
+  "tags": []
+}
